@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "name": "ESP-IDF",
+            // "compilerPath": "D:\\Espressif\\tools\\xtensa-esp32-elf\\esp-12.2.0_20230208\\xtensa-esp32-elf\\bin\\xtensa-esp32-elf-gcc.exe",
+            "compilerPath": "${config:idf.toolsPathWin}\\tools\\xtensa-esp32-elf\\esp-12.2.0_20230208\\xtensa-esp32-elf\\bin\\xtensa-esp32-elf-gcc.exe",
+            "includePath": [
+                "${config:idf.espIdfPath}/components/**",
+                "${config:idf.espIdfPathWin}/components/**",
+                "${config:idf.espAdfPath}/components/**",
+                "${config:idf.espAdfPathWin}/components/**",
+                "${workspaceFolder}/**",
+                // "D:/Espressif/frameworks/esp-idf-v5.1/examples/**",
+                // "D:/Espressif/frameworks/esp-idf-v5.1/components/**",
+                "D:/ESP32/ESP32/v5.1/esp-idf/examples/**",
+                "D:/ESP32/ESP32/v5.1/esp-idf/components/**",  
+                //"E:/Liz/IMU/esp/Liz_client/components/**"
+            ],
+            "browse": {
+                "path": [
+                    "${config:idf.espIdfPath}/components",
+                    "${config:idf.espIdfPathWin}/components",
+                    "${config:idf.espAdfPath}/components/**",
+                    "${config:idf.espAdfPathWin}/components/**",
+                    "${workspaceFolder}/**",
+                    // "D:/Espressif/frameworks/esp-idf-v5.1/examples/**",
+                    // "D:/Espressif/frameworks/esp-idf-v5.1/components/**",
+                    "D:/ESP32/ESP32/v5.1/esp-idf/examples/**",
+                    "D:/ESP32/ESP32/v5.1/esp-idf/components/**",
+                    // //"E:/Liz/IMU/esp/Liz_client/components/**"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            }
+        }
+    ],
+    "version": 4
+}

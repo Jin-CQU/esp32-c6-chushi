@@ -1,0 +1,129 @@
+<!-- 当前代码来源于index-html-with-scan.html代码 -->
+
+<!-- 当前代码来源于https://blog.csdn.net/q_fy_p/article/details/127175477网页中的index.html代码 -->
+<!-- html嵌入参考：https://blog.csdn.net/qq_27114397/article/details/89643232 -->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>WIFI
+			
+		</title>
+		<meta name="viewport" http-equiv="Content-Type" content="width=device-width; initial-scale=1; charset=UTF-8">
+	</head>
+	
+	<style type="text/css">
+		.input{display: block; margin-top: 10px;}
+		.input span{width: 100px; float: left; float: left; height: 36px; line-height: 36px;}
+		.input input{height: 30px;width: 200px;}
+		.btn{width: 120px; height: 35px; background-color: #000000; border:0px; color:#ffffff; margin-top:15px; margin-left:100px;}
+	</style>
+	
+	<body>
+		<form method="POST" action="configwifi">
+			<label class="input">
+				<span>
+					WiFi名称  
+				</span>
+				<input type="text" name="SSID">
+			</label>
+			<label class="input">
+				<span>
+					WiFi密码
+				</span> 
+				<input type="text"  name="password">
+			</label>
+			<label class="input">
+				<span>
+					序列号
+				</span> 
+				<input type="text"  name="client_serial"  placeholder="000000(6位整数或字母组合)">
+			</label>
+			<label class="input"></label>
+			<span>传输协议</span>
+			<select type="text" name="protocol" placeholder="UDP">
+				<option value="UDP">UDP</option>
+				<option value="TCP">TCP</option>
+			</select>
+			<label class="input"></label>
+			<span>采样频率</span>
+			<select type="text" name="frequency" placeholder="2kHz">
+				<option value="1kHz">1kHz</option>
+				<option value="2kHz">2kHz</option>
+				<option value="4kHz">4kHz</option>
+				<option value="8kHz">8kHz</option>
+			</select>
+			<label class="input"></label>
+			<span>带通滤波</span>
+			<select type="text" name="bp_filter" placeholder="on">
+				<option value="on">on</option>
+				<option value="off">off</option>
+			</select>
+			<label class="input"></label>
+			<span>高通滤波</span>
+			<select type="text" name="hp_filter" placeholder="on">
+				<option value="on">on</option>
+				<option value="off">off</option>
+			</select>
+			<label class="input"></label>
+			<span>低通滤波</span>
+			<select type="text" name="lp_filter" placeholder="on">
+				<option value="on">on</option>
+				<option value="off">off</option>
+			</select>
+			<label class="input"></label>
+			<span>工频滤波</span>
+			<select type="text" name="notch_filter" placeholder="on">
+				<option value="on">on</option>
+				<option value="off">off</option>
+			</select>
+			<label class="input"></label>
+			<span>网络配置</span>
+			<select type="text" name="connect_type" placeholder="auto">
+				<option value="auto">auto</option>
+				<option value="manual">manual</option>
+			</select>
+			<p><span> 若选择手动配置，请输入以下信息</P>
+			<label class="input">
+				<span>
+					主机IP
+				</span> 
+				<input type="text"  name="host_ip"  placeholder="192.168.1.1">
+			</label>
+			<label class="input">
+				<span>
+					脑电端口
+				</span> 
+				<input type="text"  name="eeg_port"  placeholder="30300">
+			</label>
+			<label class="input">
+				<span>
+					脑氧端口
+				</span> 
+				<input type="text"  name="fnirs_port"  placeholder="30301">
+			</label>
+			<label class="input">
+				<span>
+					子网掩码
+				</span> 
+				<input type="text"  name="netmask"  placeholder="255.255.255.0">
+			</label>
+			<label class="input">
+				<span>
+					网关地址
+				</span> 
+				<input type="text"  name="gateway"  placeholder="192.168.1.1">
+			</label>
+			<label class="input">
+				<span>
+					结点IP
+				</span> 
+				<input type="text"  name="client_ip" placeholder="192.168.1.254">
+			</label>
+			<input class="btn" type="submit" name="submit" value="submit">
+			<p><span > 注意事项:</P>
+			<p><span> 1.默认结点序列号：000000，只可输入0~9、a~f、A~F(不区分大小写)，g~z、G~Z均视为f、F，其余字符视为0；不足6位则在前补0，多于6位则取前6位</P>
+			<p><span> 2.默认使用UDP传输协议</P>
+		</form>
+	</body>
+</html>
