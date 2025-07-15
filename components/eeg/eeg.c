@@ -784,6 +784,7 @@ EEG_ERR_T eeg_init(void)
 			/* 初始化报文结构 */
 			buf = g_eeg.sub_bufs[i];
 			msg = &buf[j * g_eeg.frame_total_len];
+			
 
 			/* 首部结构 */
 			if (ADS129X_FREQ_1KHZ == g_eeg.freq)
@@ -802,7 +803,7 @@ EEG_ERR_T eeg_init(void)
 			msg[DATA_FRAME_OFT_SERIAL] = g_eeg.serial >> 16;
 			msg[DATA_FRAME_OFT_SERIAL + 1] = g_eeg.serial >> 8;
 			msg[DATA_FRAME_OFT_SERIAL + 2] = g_eeg.serial;
-			msg[DATA_FRAME_OFT_CHN] = j;
+			msg[DATA_FRAME_OFT_CHN] = j;	/* 通道号从0开始 */
 
 			/* 有效数据长度 */
 			*(uint16_t*)&msg[DATA_FRAME_OFT_LEN] = htons(g_eeg.frame_total_len - CRC_SIZE - TS_SIZE - DATA_FRAME_OFT_DATA);
@@ -1284,9 +1285,10 @@ static void IRAM_ATTR drdy_isr_handler(void *arg)
 		for (i = ADS129X_CHN1; i <= ADS129X_CHN4; i++)
 #endif
 		{
+			int ads_chn = ADS129X_CHN2 + i; // 实际采集2-5通道
 			/* 符号转换 */
-			amp = ((data_buf[3+3*i]&0x7F)<<16) | (data_buf[4+3*i]<<8) | (data_buf[5+3*i]);
-			ori_val[i] = (data_buf[3+3*i]&0x80) ? (0 - amp) : amp;
+			amp = ((data_buf[3+3*ads_chn]&0x7F)<<16) | (data_buf[4+3*ads_chn]<<8) | (data_buf[5+3*ads_chn]);
+			ori_val[i] = (data_buf[3+3*ads_chn]&0x80) ? (0 - amp) : amp;
 
 			/* 数据缩放 */
 			y = ((double)ori_val[i]) * ADS129X_BASE_SCALE;
