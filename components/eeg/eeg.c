@@ -1222,6 +1222,9 @@ static void *eeg_send_task(void *arg)
  * @param - arg			:	入参
  * @return 				:	无
 **************************************************/
+// IRAM_ATTR 是 ESP-IDF 框架中定义的一个宏，通常在 esp_attr.h 头文件中定义。
+// 它用于将函数放置到 IRAM（内部 RAM）中，保证中断等高实时性代码的执行速度。
+// 你已经在本文件顶部包含了 #include "esp_attr.h"，无需额外定义。
 static void IRAM_ATTR drdy_isr_handler(void *arg)
 {
 	int i = 0;
