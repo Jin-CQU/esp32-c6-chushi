@@ -15,6 +15,7 @@ Copyright ? LIZ MEDICAL TECHNOLOGY Co., Ltd. 2022. All rights reserved.
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
+#include "freertos/timers.h" // FreeRTOS 定时器
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -34,7 +35,7 @@ Copyright ? LIZ MEDICAL TECHNOLOGY Co., Ltd. 2022. All rights reserved.
 #include "driver/uart.h"
 #include "eeg.h"
 #include "fnirs.h"
-#include "timers.h"
+//#include "timers.h"
 #include "led.h"
 #include "key.h"
 #include "battery.h"
@@ -118,13 +119,37 @@ void app_main(void)
 
 		if (EEG_OK != eeg_init())
 		{
+			MAIN_ERR("EEG initialization failed!");
 			esp_restart();
 		}
 #if 0
 		if (FNIRS_OK != fnirs_init())
 		{
+			MAIN_ERR("FNIRS initialization failed!");
 			esp_restart();
 		}
 #endif
+	
+		// ✅ 启动 BLE 通信
+		MAIN_INFO("Starting BLE communication...");
+		ble_communication_start();
+		MAIN_INFO("BLE communication started successfully");
+
+		// ✅ 增强的主循环
+		static int status_count = 0;
+		while (true) {
+			vTaskDelay(pdMS_TO_TICKS(1000));
+			
+			// 每10秒打印一次系统状态
+			if (++status_count >= 10) {
+				status_count = 0;
+				MAIN_INFO("System Status: WiFi+BLE active, EEG running");
+			}
+			
+			// 这里可以添加其他周期性任务
+			// - 检查连接状态
+			// - 数据处理
+			// - 系统监控等
+		}
 	}
 }

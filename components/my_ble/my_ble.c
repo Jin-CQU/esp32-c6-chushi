@@ -18,13 +18,16 @@ gatt_svr_chr_access_generic()
 
 #include <string.h>
 #include "nvs_flash.h" 
-#include "esp_nimble_hci.h" 
+#include "esp_nimble_hci.h"
+#include "esp_bt.h"
+#include "api/esp_bt_main.h"
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_hs.h"
 #include "host/util/util.h"
 #include "console/console.h"
 #include "services/gap/ble_svc_gap.h"
+#include "services/gatt/ble_svc_gatt.h"
 #include "my_ble.h"
 
 // 标准心率服务和特征的UUID
@@ -44,10 +47,12 @@ static struct ble_gap_adv_params adv_params = { // 广播参数
     .itvl_max = BLE_GAP_ADV_ITVL_MS(200), // 最大间隔：200毫秒
 };
 
+static int gatt_svr_init(void);
+static int ble_gap_event(struct ble_gap_event *event, void *arg);
 static int gatt_svr_chr_access_generic(uint16_t conn_handle, uint16_t attr_handle, 
                                        struct ble_gatt_access_ctxt *ctxt,          
                                        void *arg); // 通用特征访问处理函数
-                    
+
 static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
     {
         .type = BLE_GATT_SVC_TYPE_PRIMARY,        // 主服务
@@ -126,7 +131,7 @@ static void ble_app_on_sync(void)
     // rc = ble_gap_advertise_start(
     //     BLE_OWN_ADDR_RANDOM, NULL, NULL, NULL, NULL); // 开始广播
 
-    rc = ble_gap_advertise_start(gap_addr_type, NULL, BLE_HS_FOREVER,
+    rc = ble_gap_adv_start(gap_addr_type, NULL, BLE_HS_FOREVER,
                                  &adv_params, ble_gap_event, NULL); // 开始广播，让其他设备能够发现和连接 ESP32
     //gap_addr_type 是 GAP 地址类型，NULL 表示没有额外的参数传递给回调函数
     //&adv_params 是广告参数，BLE_HS_FOREVER 是广播持续时间（无限期）
@@ -154,7 +159,7 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_DISCONNECT: // 断开连接事件
         printf("Device disconnected; restarting advertising; reason=%d\n", event->disconnect.reason);
         // 重新开始广播
-        ble_gap_advertise_start(gap_addr_type, NULL, BLE_HS_FOREVER,
+        ble_gap_adv_start(gap_addr_type, NULL, BLE_HS_FOREVER,
                                &adv_params, ble_gap_event, NULL);
         break;
 
@@ -173,7 +178,7 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
  * @param - void		:	无
  * @return - int		:	0 成功，其他值表示错误
 **************************************************/
-static int gatt_svr_init()
+static int gatt_svr_init(void)
 {
     int rc;
 
@@ -212,12 +217,30 @@ void ble_communication_start(void)
     }
     ESP_ERROR_CHECK(ret); // 确保 NVS Flash 初始化成功
     */
+
+
     // 初始化 NimBLE HCI
-    ret = esp_nimble_hci_init(); 
+    // ret = esp_nimble_hci_init(); 
+    // if (ret != ESP_OK) {
+    //     return; // 如果初始化失败，直接返回
+    // }
+
+    // ESP32C6蓝牙控制器初始化
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ret = esp_bt_controller_init(&bt_cfg);
     if (ret != ESP_OK) {
-        return; // 如果初始化失败，直接返回
+        printf("Initialize controller failed: %s\n", esp_err_to_name(ret));
+        return;
     }
 
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if (ret != ESP_OK) {
+        printf("Enable controller failed: %s\n", esp_err_to_name(ret));
+        return;
+    }
+    
     // 初始化 NimBLE 端口
     nimble_port_init(); 
 

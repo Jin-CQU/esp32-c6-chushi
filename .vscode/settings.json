@@ -105,7 +105,12 @@
 	"ble_esp_hs.h": "c",
 	"ble_svc_gap.h": "c",
 	"hci_common.h": "c",
-	"ble.h": "c"
+	"ble.h": "c",
+	"my_ble.h": "c",
+	"version.h": "c",
+	"console.h": "c",
+	"nimble_port_freertos.h": "c",
+	"esp_bt_main.h": "c"
 },
   "idf.monitorBaudRate": "115200",
   "idf.flashBaudRate": "921600",
