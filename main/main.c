@@ -41,6 +41,7 @@ Copyright ? LIZ MEDICAL TECHNOLOGY Co., Ltd. 2022. All rights reserved.
 #include "version.h"
 #include "uart.h"
 #include "utils.h"
+#include "my_ble.h"  // 引入自定义的 BLE 组件头文件
 
 #define MAIN_TAG "ESP32"
 #define MAIN_INFO(fmt, ...) ESP_LOGI(MAIN_TAG, "(%s:%d) "fmt, __func__, __LINE__, ##__VA_ARGS__)

@@ -98,7 +98,14 @@
 	"util.h": "c",
 	"utils.h": "c",
 	"stacktrace": "c",
-	"stdint.h": "c"
+	"stdint.h": "c",
+	"ble_hs.h": "c",
+	"esp_nimble_hci.h": "c",
+	"nimble_port.h": "c",
+	"ble_esp_hs.h": "c",
+	"ble_svc_gap.h": "c",
+	"hci_common.h": "c",
+	"ble.h": "c"
 },
   "idf.monitorBaudRate": "115200",
   "idf.flashBaudRate": "921600",
