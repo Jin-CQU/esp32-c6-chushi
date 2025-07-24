@@ -44,10 +44,29 @@ Copyright ? LIZ MEDICAL TECHNOLOGY Co., Ltd. 2022. All rights reserved.
 #include "utils.h"
 #include "my_ble.h"  // 引入自定义的 BLE 组件头文件
 
+
+
 #define MAIN_TAG "ESP32"
 #define MAIN_INFO(fmt, ...) ESP_LOGI(MAIN_TAG, "(%s:%d) "fmt, __func__, __LINE__, ##__VA_ARGS__)
 #define MAIN_DBG(fmt, ...) ESP_LOGW(MAIN_TAG, "(%s:%d) "fmt, __func__, __LINE__, ##__VA_ARGS__)
 #define MAIN_ERR(fmt, ...) ESP_LOGE(MAIN_TAG, "(%s:%d) "fmt, __func__, __LINE__, ##__VA_ARGS__)
+
+// ✅ 添加EEG初始化任务函数声明和定义
+// static void eeg_init_task(void *pvParameters)
+// {
+//     MAIN_INFO("Starting EEG initialization in background...");
+    
+//     if (EEG_OK != eeg_init())
+//     {
+//         MAIN_ERR("EEG initialization failed! Continuing with BLE only...");
+//     } else {
+//         MAIN_INFO("✅ EEG initialization completed successfully!");
+//     }
+    
+//     // 任务完成后删除自己
+//     // vTaskDelete(NULL);
+// }
+
 
 void app_main(void)
 {
@@ -117,11 +136,45 @@ void app_main(void)
 		wifi_record_password((uint8_t *)password);
 		wifi_init_sta();
 
+		// // ✅ 先启动 BLE，不管WiFi和EEG
+		// MAIN_INFO("Starting BLE communication...");
+		// ble_communication_start();
+
+		// // ✅ 检查BLE是否真的启动成功
+		// vTaskDelay(pdMS_TO_TICKS(10000));  // 等待10秒让BLE完全启动
+
+		// // 检查BLE是否真的在运行
+		// MAIN_INFO("BLE initialization completed, continuing...");
+
+		// // ✅ 添加BLE状态检查
+		// if (ble_hs_is_enabled()) {
+		// 	MAIN_INFO("✅ BLE Host Stack is enabled and running");
+		// } else {
+		// 	MAIN_ERR("❌ BLE Host Stack is NOT running!");
+		// }
+
+		// // ✅ 检查广播状态
+		// if (ble_gap_adv_active()) {
+		// 	MAIN_INFO("✅ BLE advertising is active");
+		// } else {
+		// 	MAIN_ERR("❌ BLE advertising is NOT active!");
+		// 	// 尝试重新启动广播
+		// 	MAIN_INFO("Attempting to restart BLE advertising...");
+		// 	ble_gap_adv_start(BLE_OWN_ADDR_PUBLIC, NULL, BLE_HS_FOREVER, &adv_params, ble_gap_event, NULL);
+		// }
+
 		if (EEG_OK != eeg_init())
 		{
-			MAIN_ERR("EEG initialization failed!");
-			esp_restart();
+			MAIN_ERR("EEG initialization failed! Continuing with BLE only...");
+		} else {
+			MAIN_INFO("✅ EEG initialization completed successfully!");
 		}
+
+		// ✅ 将EEG初始化放到独立任务中，避免阻塞主线程
+		//  xTaskCreate(eeg_init_task, "eeg_init", 4096, NULL, 3, NULL);
+
+		//  MAIN_INFO("Main thread continuing, EEG initializing in background...");
+
 #if 0
 		if (FNIRS_OK != fnirs_init())
 		{
@@ -129,11 +182,6 @@ void app_main(void)
 			esp_restart();
 		}
 #endif
-	
-		// ✅ 启动 BLE 通信
-		MAIN_INFO("Starting BLE communication...");
-		ble_communication_start();
-		MAIN_INFO("BLE communication started successfully");
 
 		// ✅ 增强的主循环
 		static int status_count = 0;
@@ -143,13 +191,20 @@ void app_main(void)
 			// 每10秒打印一次系统状态
 			if (++status_count >= 10) {
 				status_count = 0;
-				MAIN_INFO("System Status: WiFi+BLE active, EEG running");
+				
+				// ✅ 检查系统状态
+				size_t free_heap = esp_get_free_heap_size();
+				MAIN_INFO("System Status: Free memory: %d bytes", free_heap);
+				
+				// ✅ 如果内存过低，可能需要重启BLE
+				if (free_heap < 30000) {
+					MAIN_ERR("Low memory warning! Consider restarting BLE...");
+				}
+				
+				MAIN_INFO("BLE+WiFi+EEG system running...");
 			}
-			
-			// 这里可以添加其他周期性任务
-			// - 检查连接状态
-			// - 数据处理
-			// - 系统监控等
 		}
 	}
 }
+
+

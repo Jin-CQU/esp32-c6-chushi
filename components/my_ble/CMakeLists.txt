@@ -12,6 +12,7 @@ idf_component_register(
         
     PRIV_INCLUDE_DIRS 
         "${IDF_PATH}/components/bt/include"
+        "${IDF_PATH}/components/bt/include/esp32c6/include"
         "${IDF_PATH}/components/bt/host/nimble/esp-hci/include"
         "${IDF_PATH}/components/bt/host/nimble/nimble/nimble/include"
         "${IDF_PATH}/components/bt/host/nimble/nimble/porting/nimble/include"

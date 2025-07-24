@@ -17,6 +17,8 @@ gatt_svr_chr_access_generic()
 */
 
 #include <string.h>
+#include "freertos/FreeRTOS.h"       // ← 新增
+#include "freertos/task.h"           // ← 新增
 #include "nvs_flash.h" 
 #include "esp_nimble_hci.h"
 #include "esp_bt.h"
@@ -25,10 +27,17 @@ gatt_svr_chr_access_generic()
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_hs.h"
 #include "host/util/util.h"
+#include "host/ble_store.h"          // ← 新增
 #include "console/console.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include "my_ble.h"
+#include "nimble/ble.h"
+#include "host/ble_gap.h"
+
+//#include "host/ble_hs.h"
+//#include "host/ble_gap.h"
+//#include "nimble/nimble_port.h"
 
 // 标准心率服务和特征的UUID
 #define SERVICE_UUID 0x180D         // 心率服务UUID
@@ -40,7 +49,7 @@ gatt_svr_chr_access_generic()
 
 static uint8_t gap_addr_type; // GAP地址类型
 
-static struct ble_gap_adv_params adv_params = { // 广播参数
+struct ble_gap_adv_params adv_params = { // 广播参数
     .conn_mode = BLE_GAP_CONN_MODE_UND, // 连接模式：未连接
     .disc_mode = BLE_GAP_DISC_MODE_GEN, // 广播模式：通用
     .itvl_min = BLE_GAP_ADV_ITVL_MS(100), // 最小间隔：100毫秒
@@ -48,7 +57,7 @@ static struct ble_gap_adv_params adv_params = { // 广播参数
 };
 
 static int gatt_svr_init(void);
-static int ble_gap_event(struct ble_gap_event *event, void *arg);
+// static int ble_gap_event(struct ble_gap_event *event, void *arg);
 static int gatt_svr_chr_access_generic(uint16_t conn_handle, uint16_t attr_handle, 
                                        struct ble_gatt_access_ctxt *ctxt,          
                                        void *arg); // 通用特征访问处理函数
@@ -115,7 +124,7 @@ static int gatt_svr_chr_access_generic(uint16_t conn_handle, uint16_t attr_handl
  * @return 				:   无
  * @note				:   完成 BLE 设备的基础配置和启动
 **************************************************/
-static void ble_app_on_sync(void)
+void ble_app_on_sync(void)
 {
     int rc; // 返回值
 
@@ -130,15 +139,26 @@ static void ble_app_on_sync(void)
 
     // rc = ble_gap_advertise_start(
     //     BLE_OWN_ADDR_RANDOM, NULL, NULL, NULL, NULL); // 开始广播
+    // 设置广播包内容
+    uint8_t adv_data[] = {
+        0x02, 0x01, 0x06,
+        0x03, 0x03, 0x0D, 0x18,
+        0x12, 0x09, 'E','S','P','3','2',' ','E','E','G',' ','D','e','v','i','c','e'
+    };
+    // 广播数据包，包含设备名称和服务UUID
+    ble_gap_adv_set_data(adv_data, sizeof(adv_data)); // 设置广播数据
 
     rc = ble_gap_adv_start(gap_addr_type, NULL, BLE_HS_FOREVER,
                                  &adv_params, ble_gap_event, NULL); // 开始广播，让其他设备能够发现和连接 ESP32
-    //gap_addr_type 是 GAP 地址类型，NULL 表示没有额外的参数传递给回调函数
+    //gap_addr_type 是 GAP 地址类型，NULL 表示没有额外的参数传递给回调函数 RANDOM 表示使用随机地址
     //&adv_params 是广告参数，BLE_HS_FOREVER 是广播持续时间（无限期）
     // ble_gap_event 是处理 GAP 事件的回调函数
     // NULL 表示没有额外的参数传递给回调函数
+    if (rc != 0) {
+        printf("ble_gap_adv_start failed, rc=%d\n", rc);
+    }
     assert(rc == 0); // 确保广播启动成功
-
+        
     printf("BLE device started, name: %s\n", Device_Name);
 }
 
@@ -149,25 +169,40 @@ static void ble_app_on_sync(void)
  * @return - int        :   0 成功，其他值表示错误
  * @note                :   处理连接、断开连接、广播等事件
 **************************************************/
-static int ble_gap_event(struct ble_gap_event *event, void *arg)
+int ble_gap_event(struct ble_gap_event *event, void *arg)
 {
     switch (event->type) {
     case BLE_GAP_EVENT_CONNECT: // 连接事件
-        printf("Device connected; conn_handle=%d\n", event->connect.conn_handle);
+        printf("✅ BLE Device connected successfully!\n");
+        printf("Connection handle: %d\n", event->connect.conn_handle);
+        printf("Connection status: %d\n", event->connect.status);
         break;
 
     case BLE_GAP_EVENT_DISCONNECT: // 断开连接事件
-        printf("Device disconnected; restarting advertising; reason=%d\n", event->disconnect.reason);
-        // 重新开始广播
-        ble_gap_adv_start(gap_addr_type, NULL, BLE_HS_FOREVER,
-                               &adv_params, ble_gap_event, NULL);
+        printf("⚠️  BLE Device disconnected\n");
+        printf("Disconnect reason: %d\n", event->disconnect.reason);
+        printf("Restarting advertising...\n");
+        
+        // ✅ 重新开始广播，添加错误检查
+        int rc = ble_gap_adv_start(gap_addr_type, NULL, BLE_HS_FOREVER,
+                                  &adv_params, ble_gap_event, NULL);
+        if (rc != 0) {
+            printf("ERROR: Failed to restart advertising: %d\n", rc);
+        } else {
+            printf("✅ Advertising restarted successfully\n");
+        }
         break;
 
     case BLE_GAP_EVENT_ADV_COMPLETE: // 广播完成事件
-        printf("Advertising completed\n");
+        printf("! Advertising completed\n");
+        break;
+        
+    case BLE_GAP_EVENT_CONN_UPDATE_REQ: // 连接参数更新请求
+        printf("! Connection update requested\n");
         break;
 
     default:
+        printf("! BLE GAP event: %d\n", event->type);
         break;
     }
     return 0;
@@ -207,49 +242,54 @@ static int gatt_svr_init(void)
 void ble_communication_start(void)
 {
     esp_err_t ret;
-    /* ❌ 注释掉这部分，因为 main.c 已经初始化了 NVS
-    // 初始化 NVS Flash
-    ret = nvs_flash_init(); 
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        // 如果 NVS Flash 没有足够的空间或版本不兼容，擦除并重新初始化
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(ret); // 确保 NVS Flash 初始化成功
-    */
+    
+    printf("Starting BLE initialization...\n");
 
-
-    // 初始化 NimBLE HCI
-    // ret = esp_nimble_hci_init(); 
-    // if (ret != ESP_OK) {
-    //     return; // 如果初始化失败，直接返回
-    // }
-
-    // ESP32C6蓝牙控制器初始化
-    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-
-    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ret = esp_bt_controller_init(&bt_cfg);
+    // ✅ 步骤1：释放经典蓝牙内存
+    printf("Step 1: Releasing classic BT memory...\n");
+    ret = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
     if (ret != ESP_OK) {
-        printf("Initialize controller failed: %s\n", esp_err_to_name(ret));
+        printf("Warning: Failed to release BT memory: %s (continuing anyway)\n", esp_err_to_name(ret));
+    }
+
+    // ✅ 步骤2：直接初始化NimBLE端口
+    printf("Step 2: Initializing NimBLE port...\n");
+    ret = nimble_port_init(); 
+    if (ret != ESP_OK) {
+        printf("ERROR: NimBLE port init failed: %s\n", esp_err_to_name(ret));
+        printf("BLE initialization FAILED at step 2\n");
         return;
     }
+    printf("NimBLE port initialized successfully\n");
 
-    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
-    if (ret != ESP_OK) {
-        printf("Enable controller failed: %s\n", esp_err_to_name(ret));
+    // ✅ 步骤3：设置回调函数
+    printf("Step 3: Setting up callbacks...\n");
+    ble_hs_cfg.sync_cb = ble_app_on_sync; 
+    ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
+    printf("Callbacks configured successfully\n");
+
+    // ✅ 步骤4：手动创建 NimBLE 任务（避免崩溃）
+    printf("Step 4: Creating NimBLE task manually...\n");
+    vTaskDelay(pdMS_TO_TICKS(100));  // 延时确保系统稳定
+
+    // 创建NimBLE任务，指定栈大小和优先级
+    TaskHandle_t nimble_task_handle;
+    BaseType_t task_created = xTaskCreate(
+        nimble_port_run,           // 任务函数
+        "nimble_host",             // 任务名称
+        4096,                      // 栈大小 (4KB)
+        NULL,                      // 任务参数
+        5,                         // 优先级
+        &nimble_task_handle        // 任务句柄
+    );
+
+    if (task_created == pdPASS) {
+        printf("NimBLE task created successfully\n");
+    } else {
+        printf("ERROR: Failed to create NimBLE task\n");
         return;
     }
     
-    // 初始化 NimBLE 端口
-    nimble_port_init(); 
-
-    // 设置同步回调函数
-    ble_hs_cfg.sync_cb = ble_app_on_sync; 
-    ble_hs_cfg.store_status_cb = ble_store_util_status_rr; // 设置状态存储回调函数
-
-    // 启动 NimBLE FreeRTOS 任务
-    nimble_port_freertos_init(NULL); // 在 FreeRTOS 中启动 NimBLE 任务
-    //nimble_port_run(); // 直接阻塞运行 NimBLE 端口
-    printf("BLE communication initialization completed\n");
+    printf("✅ BLE communication initialization completed successfully!\n");
+    printf("Device should now be discoverable as: %s\n", Device_Name);
 }

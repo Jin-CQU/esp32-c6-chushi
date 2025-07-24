@@ -1,7 +1,9 @@
 idf_component_register(SRCS "main.c"
 					INCLUDE_DIRS "../components"
 					
-					# PRIV_INCLUDE_DIRS "${IDF_PATH}/components/driver/gpio/include" 
+					PRIV_INCLUDE_DIRS 
+									"${IDF_PATH}/components/bt/host/nimble/nimble/nimble/host/include"
+					# 				"${IDF_PATH}/components/driver/gpio/include" 
 					# 				"${IDF_PATH}/components/driver/uart/include" 
 					# 				"${IDF_PATH}/components/freertos/FreeRTOS-Kernel/include/freertos"
 					# 				"${IDF_PATH}/examples/protocols/http_server/captive_portal/main/include"
